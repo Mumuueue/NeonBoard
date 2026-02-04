@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Neon Board - Territory Lights</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: radial-gradient(circle at top, #243b55 0, #141e30 40%, #050811 100%);
+    margin: 0;
+    padding: 20px 0 80px;
+    color: #f5f7ff;
+    overflow-y: auto;
+  }
+
+  #particles {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #7df9ff 0, rgba(125,249,255,0) 70%);
+    opacity: 0.4;
+    animation: float 18s linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translate3d(0, 0, 0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translate3d(0, -120vh, 0); opacity: 0; }
+  }
+
+  h2 {
+    font-size: 32px;
+    margin: 10px 0 5px;
+    color: #00f0ff;
+    text-shadow:
+      0 0 6px rgba(0, 240, 255, 0.8),
+      0 0 16px rgba(0, 240, 255, 0.7),
+      0 0 32px rgba(0, 240, 255, 0.5);
+    letter-spacing: 0.08em;
+  }
+
+  #subtitle {
+    font-size: 13px;
+    color: #c7d4ff;
+    margin-bottom: 18px;
+  }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(15, 50px);
+    grid-template-rows: repeat(15, 50px);
+    gap: 6px;
+    padding: 20px;
+    border-radius: 18px;
+    background: rgba(10, 18, 35, 0.85);
+    border: 1px solid rgba(180, 210, 255, 0.25);
+    margin-bottom: 20px;
+  }
+
+  .cell {
+    width: 50px;
+    height: 50px;
+    background-color: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.18s ease;
+    background-size: auto;
+    background-position: center;
+  }
+
+  .cell:hover {
+    background-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .selected {
+    border-color: #4da6ff;
+    box-shadow: 0 0 12px #4da6ff;
+    transform: scale(1.05);
+  }
+
+  .effect-glow {
+    box-shadow: 0 0 12px #00f0ff, 0 0 24px #00f0ff;
+  }
+
+  @keyframes rainbow {
+    0% { box-shadow: 0 0 10px red; }
+    25% { box-shadow: 0 0 10px yellow; }
+    50% { box-shadow: 0 0 10px lime; }
+    75% { box-shadow: 0 0 10px cyan; }
+    100% { box-shadow: 0 0 10px red; }
+  }
+  .effect-rainbow {
+    animation: rainbow 3s infinite;
+  }
+
+  #preview {
+    margin-top: 10px;
+    padding: 12px 16px 16px;
+    background: rgba(10, 18, 35, 0.9);
+    border: 1px solid rgba(160, 190, 255, 0.4);
+    border-radius: 12px;
+    min-width: 280px;
+  }
+
+  #previewArea {
+    margin: 10px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: radial-gradient(circle at top, #1f2937, #020617);
+    border: 1px solid rgba(200, 220, 255, 0.3);
+    display: none;
+  }
+
+  #previewImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    cursor: grab;
+    border-radius: 10px;
+  }
+
+  .shop-btn {
+    padding: 10px 22px;
+    margin: 5px;
+    background: radial-gradient(circle at top, #3b82f6, #1d4ed8);
+    color: #e5f0ff;
+    border: 1px solid rgba(191, 219, 254, 0.8);
+    cursor: pointer;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .shop-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  #points {
+    font-weight: bold;
+    color: #7df9ff;
+  }
+
+  input[type="text"], input[type="file"], select {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(148, 163, 184, 0.9);
+    background: rgba(15, 23, 42, 0.9);
+    color: #e5e7eb;
+    font-size: 13px;
+  }
+
+  #codeInput { width: 190px; }
+
+  hr {
+    border: none;
+    border-top: 1px solid rgba(148, 163, 184, 0.6);
+  }
+
+  .cell-tooltip {
+    position: absolute;
+    background: rgba(10, 20, 40, 0.9);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(120, 180, 255, 0.5);
+    color: #e5f0ff;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<h2>Neon Board - Territory Lights</h2>
+<div id="subtitle">パネルを買って、ネオンボードに自分の広告を並べよう。</div>
+
+<p>ポイント: <span id="points">0</span> pt</p>
+
+<p id="siteDescription" style="max-width:700px; text-align:center; line-height:1.7; color:#cbd5f5; margin-top:10px;">
+
+  パネルを選び画像とリンクをアップロードすると、自動的に分割・配置されます。<br>
+　クリック数ランキングや広告主の割合もリアルタイム更新。<br><br>
+
+  広告を掲載して11時間後からフェードアウトし始め、12時間後には完全に消滅。<br>　再び空きパネルとして購入可能になります。<br><br>
+　ポイントは10分で1pt加算され、有料でも得ることができます。
+</p>
+
+<p>
+  選択中マス: <span id="selectedCount">0</span> 個
+  （必要ポイント: <span id="needPoints">0</span> pt）
+</p>
+<div id="grid"></div>
+<div id="shop">
+  <h3>ポイント購入（Stripe 決済）</h3>
+
+  <button class="shop-btn" onclick="window.open('https://buy.stripe.com/test_9B614m3Ttfli5yscyu7EQ01','_blank')">100pt（100円）</button><br>
+  <button class="shop-btn" onclick="window.open('https://buy.stripe.com/test_3cI5kCfCbgpm3qk2XU7EQ02','_blank')">400pt（240円）</button><br>
+  <button class="shop-btn" onclick="window.open('https://buy.stripe.com/test_4gM6oG3Ttc96d0UgOK7EQ03','_blank')">900pt（480円）</button>
+
+  <p style="font-size:12px; color:#9ca3c9; margin-top:8px;">
+    決済完了後、Stripe の成功ページに表示される<br>
+    「ポイント付与コード」を下の欄に入力してください。
+  </p>
+</div>
+
+<!-- ▼▼▼ 広告登録パネル ▼▼▼ -->
+<div id="controls">
+  <h3>広告登録</h3>
+
+  広告主名:<br>
+  <input id="adName" type="text" size="40" placeholder="例：山田太郎shop"><br><br>
+
+  画像アップロード:<br>
+  <input type="file" id="adFile" accept="image/*"><br><br>
+
+  リンクURL:<br>
+  <input id="adLink" type="text" size="40" placeholder="https://example.com"><br><br>
+
+  広告主の分類:<br>
+  <select id="adType">
+    <option value="company">企業</option>
+    <option value="individual">個人</option>
+    <option value="creator">クリエイター</option>
+    <option value="service">サービス</option>
+  </select><br><br>
+
+  エフェクト（任意）:<br>
+  <select id="effectSelect">
+    <option value="">なし（無料）</option>
+    <option value="glow">ネオン枠（50pt）</option>
+    <option value="rainbow">レインボー枠（150pt）</option>
+  </select><br><br>
+
+  <button onclick="setAd()">広告情報を保存</button><br><br>
+  <button onclick="showPreview()">選択マスに仮配置プレビュー</button>
+</div>
+
+
+<!-- ▼▼▼ プレビュー ▼▼▼ -->
+<div id="preview">
+  <h3>プレビュー（位置調整）</h3>
+
+  <div id="previewInfo" style="font-size:12px; color:#9ca3c9;">
+    まだプレビューはありません。
+  </div>
+
+  <div id="previewArea">
+    <img id="previewImage" src="">
+  </div>
+
+  <div id="previewActions" style="display:none; margin-top:10px;">
+    <button onclick="confirmPurchase()">この内容で購入</button>
+    <button onclick="cancelPreview()">キャンセル</button>
+  </div>
+</div>
+
+
+<hr style="margin:30px 0; width:80%;">
+
+
+<!-- ▼▼▼ ランキング ▼▼▼ -->
+<div id="rankingPanel" style="width:80%; max-width:800px; margin-bottom:20px;">
+  <h3>クリック数ランキング</h3>
+
+  <button class="shop-btn" onclick="renderRanking('day')">1day</button>
+  <button class="shop-btn" onclick="renderRanking('week')">1week</button>
+  <button class="shop-btn" onclick="renderRanking('month')">1month</button>
+
+  <div id="rankingList" style="margin-top:10px; font-size:13px; color:#cbd5f5;"></div>
+</div>
+
+
+<!-- ▼▼▼ 広告主の割合 ▼▼▼ -->
+<div id="statsPanel" style="width:80%; max-width:800px; margin-bottom:20px;">
+  <h3>広告主の割合</h3>
+  <div id="statsBox" style="margin-top:10px; font-size:13px; color:#cbd5f5;">
+    まだ広告がありません。
+  </div>
+</div>
+
+
+<hr style="margin:30px 0; width:80%;">
+
+
+<!-- ▼▼▼ ポイント付与コード ▼▼▼ -->
+<h3>ポイント付与コード入力</h3>
+<input id="codeInput" type="text" placeholder="例：PT-XXXX-XXXX">
+<button onclick="applyCode()">ポイントを受け取る</button>
+<p id="codeMessage" style="color:#e5e7eb; font-size:13px;"></p>
+
+
+<!-- ▼▼▼ ツールチップ ▼▼▼ -->
+<div id="tooltip" class="cell-tooltip" style="display:none;"></div>
+<script>
+// ===== モード =====
+const MODE = "test"; // "production" にすると本番モード
+
+// ===== 定数 =====
+const SIZE = 15;
+const EMPTY_COST = 100;
+
+let PROTECT_HOURS = MODE === "production" ? 12 : 30/3600;
+let FADE_START    = MODE === "production" ? 11 : 25/3600;
+
+// ===== 状態 =====
+let points = 0;
+let selectedAd = { image:"", link:"", type:"company", name:"" };
+let grid = [];
+let clickHistory = [];
+let selectedCells = [];
+let previewCells = [];
+let previewRect = null;
+let previewCost = 0;
+
+let imgX = 0, imgY = 0, imgScale = 1;
+let isDragging = false;
+let dragStartX = 0, dragStartY = 0;
+
+// ===== グリッド初期化（超重要） =====
+function createEmptyCell() {
+  return {
+    owner:null,
+    adImage:"",
+    adLink:"",
+    adType:"",
+    adName:"",
+    effect:"",
+    timestamp:0,
+    bgX:0,
+    bgY:0,
+    bgCols:1,
+    bgRows:1,
+    clicks:0
+  };
+}
+
+for (let i=0; i<SIZE*SIZE; i++) {
+  grid.push(createEmptyCell());
+}
+
+// ===== localStorage =====
+function loadState() {
+  const p = localStorage.getItem("points");
+  if (p) points = Number(p) || 0;
+
+  const g = localStorage.getItem("grid");
+  if (g) {
+    try {
+      const parsed = JSON.parse(g);
+      if (Array.isArray(parsed) && parsed.length === SIZE * SIZE) grid = parsed;
+    } catch(e) {}
+  }
+
+  const ch = localStorage.getItem("clickHistory");
+  if (ch) {
+    try {
+      clickHistory = JSON.parse(ch) || [];
+    } catch(e) {}
+  }
+}
+
+function saveState() {
+  localStorage.setItem("points", points);
+  localStorage.setItem("grid", JSON.stringify(grid));
+  localStorage.setItem("clickHistory", JSON.stringify(clickHistory));
+}
+
+// ===== 初回ボーナス =====
+function giveFirstVisitBonus() {
+  const visited = localStorage.getItem("visited");
+  if (!visited) {
+    points += 100;
+    alert("初回訪問ありがとうございます！100pt をプレゼントしました。");
+    localStorage.setItem("visited", "true");
+    saveState();
+  }
+}
+
+// ===== 座標ラベル =====
+function getCellLabel(index) {
+  const row = Math.floor(index / SIZE);
+  const col = index % SIZE;
+  const letter = String.fromCharCode(65 + col);
+  return `${letter}${row + 1}`;
+}
+
+// ===== 不適切画像チェック（簡易AI風） =====
+async function checkImageSafety(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width < 20 || img.height < 20) return resolve(false);
+      if (img.width > 8000 || img.height > 8000) return resolve(false);
+
+      const ngWords = ["sex","nude","porn","violence","kill","blood"];
+      const lower = file.name.toLowerCase();
+      if (ngWords.some(w => lower.includes(w))) return resolve(false);
+
+      resolve(true);
+    };
+    img.onerror = () => resolve(false);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ===== 出現エフェクト =====
+function playAppearAnimation(cellIndex) {
+  const gridDiv = document.getElementById("grid").children[cellIndex];
+  const rect = gridDiv.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+
+  for (let p=0; p<12; p++) {
+    const particle = document.createElement("div");
+    particle.className = "gather-particle";
+
+    const angle = Math.random()*Math.PI*2;
+    const dist = 40 + Math.random()*40;
+
+    particle.style.setProperty("--sx", Math.cos(angle)*dist + "px");
+    particle.style.setProperty("--sy", Math.sin(angle)*dist + "px");
+
+    particle.style.left = cx + "px";
+    particle.style.top = cy + "px";
+
+    document.body.appendChild(particle);
+    setTimeout(()=>particle.remove(),700);
+  }
+
+  const flash = document.createElement("div");
+  flash.className = "appear-flash";
+  flash.style.left = (cx-20)+"px";
+  flash.style.top = (cy-20)+"px";
+  document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(),500);
+}
+
+// ===== グリッド描画（安定版） =====
+function render() {
+  const container = document.getElementById("grid");
+  container.innerHTML = "";
+  const now = Date.now();
+
+  for (let i=0; i<SIZE*SIZE; i++) {
+    const cell = grid[i];
+    const div = document.createElement("div");
+    div.className = "cell";
+
+    if (cell.owner && cell.adImage) {
+      let elapsed = (now - cell.timestamp)/1000/3600;
+
+      if (elapsed >= PROTECT_HOURS) {
+        grid[i] = createEmptyCell();
+      } else {
+        div.style.backgroundImage = `url(${cell.adImage})`;
+
+        const cols = cell.bgCols;
+        const rows = cell.bgRows;
+        const xIndex = cell.bgX;
+        const yIndex = cell.bgY;
+
+        div.style.backgroundSize = `${cols*100}% ${rows*100}%`;
+
+        let xPos = cols>1 ? (xIndex/(cols-1))*100 : 50;
+        let yPos = rows>1 ? (yIndex/(rows-1))*100 : 50;
+        div.style.backgroundPosition = `${xPos}% ${yPos}%`;
+
+        if (elapsed >= FADE_START) {
+          let opacity = 1 - (elapsed-FADE_START)/(PROTECT_HOURS-FADE_START);
+          if (opacity < 0.15) opacity = 0.15;
+          div.style.opacity = opacity;
+        }
+
+        if (cell.effect === "glow") div.classList.add("effect-glow");
+        if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
+      }
+    }
+
+    if (selectedCells.includes(i)) div.classList.add("selected");
+
+    div.onclick = () => {
+      if (cell.owner && cell.adLink) {
+        cell.clicks++;
+        clickHistory.push({ cellIndex:i, time:Date.now() });
+        saveState();
+        window.open(cell.adLink,"_blank");
+      } else {
+        toggleSelect(i);
+      }
+    };
+
+// ▼ ツールチップ（座標＋広告主名） ▼
+div.onmousemove = (e) => {
+  const tooltip = document.getElementById("tooltip");
+  const coord = getCellLabel(i);
+  const name = cell.adName || (cell.owner ? "名称未設定" : "（空きマス）");
+
+  tooltip.style.display = "block";
+  tooltip.style.left = (e.pageX + 12) + "px";
+  tooltip.style.top  = (e.pageY + 12) + "px";
+  tooltip.innerHTML = `座標: ${coord}<br>広告主: ${name}`;
+};
+
+div.onmouseleave = () => {
+  const tooltip = document.getElementById("tooltip");
+  tooltip.style.display = "none";
+};
+
+
+    container.appendChild(div);
+  }
+
+  document.getElementById("points").textContent = points;
+  document.getElementById("selectedCount").textContent = selectedCells.length;
+  document.getElementById("needPoints").textContent = selectedCells.length * EMPTY_COST;
+
+  renderAdTypeStats();
+}
+
+// ===== マス選択 =====
+function toggleSelect(i) {
+  const idx = selectedCells.indexOf(i);
+  if (idx === -1) selectedCells.push(i);
+  else selectedCells.splice(idx,1);
+  render();
+}
+
+// ===== 画像アップロード =====
+document.getElementById("adFile").addEventListener("change", async function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > 3*1024*1024) {
+    alert("画像サイズが大きすぎます（3MB以下）");
+    return;
+  }
+
+  const safe = await checkImageSafety(file);
+  if (!safe) {
+    alert("不適切な画像の可能性があります");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    selectedAd.image = reader.result;
+    alert("画像を読み込みました");
+  };
+  reader.readAsDataURL(file);
+});
+
+// ===== 広告情報セット =====
+function setAd() {
+  selectedAd.name = document.getElementById("adName").value.trim();
+  selectedAd.link = document.getElementById("adLink").value.trim();
+  selectedAd.type = document.getElementById("adType").value;
+
+  if (!selectedAd.name || !selectedAd.image || !selectedAd.link) {
+    alert("広告主名・画像・リンクURLを入力してください");
+    return;
+  }
+
+  alert("広告情報を保存しました");
+}
+
+// ===== プレビュー =====
+function showPreview() {
+  if (selectedCells.length === 0) {
+    alert("マスを選択してください");
+    return;
+  }
+
+  if (!selectedAd.image) {
+    alert("画像が読み込まれていません");
+    return;
+  }
+
+  previewCells = [...selectedCells];
+  previewCost = selectedCells.length * EMPTY_COST;
+
+  let minRow=SIZE, maxRow=-1, minCol=SIZE, maxCol=-1;
+  for (const i of selectedCells) {
+    const r = Math.floor(i/SIZE);
+    const c = i % SIZE;
+    if (r<minRow) minRow=r;
+    if (r>maxRow) maxRow=r;
+    if (c<minCol) minCol=c;
+    if (c>maxCol) maxCol=c;
+  }
+
+  const rows = maxRow-minRow+1;
+  const cols = maxCol-minCol+1;
+  previewRect = { minRow, minCol, cols, rows };
+
+  document.getElementById("previewInfo").innerHTML =
+    `選択マス数: ${selectedCells.length} 個<br>` +
+    `範囲サイズ: ${cols} × ${rows} マス<br>` +
+    `必要ポイント: ${previewCost} pt`;
+
+  const area = document.getElementById("previewArea");
+  area.style.display = "block";
+  area.style.width = (cols*50)+"px";
+  area.style.height = (rows*50)+"px";
+
+  const img = document.getElementById("previewImage");
+  img.src = selectedAd.image;
+
+  imgX = 0;
+  imgY = 0;
+  imgScale = 1;
+  updateImageTransform();
+
+  document.getElementById("previewActions").style.display = "block";
+}
+
+function updateImageTransform() {
+  const img = document.getElementById("previewImage");
+  img.style.transform = `translate(${imgX}px, ${imgY}px) scale(${imgScale})`;
+}
+
+// ===== ドラッグ・ズーム =====
+const previewArea = document.getElementById("previewArea");
+const previewImage = document.getElementById("previewImage");
+
+previewImage.addEventListener("mousedown", (e)=>{
+  isDragging = true;
+  dragStartX = e.clientX - imgX;
+  dragStartY = e.clientY - imgY;
+});
+
+document.addEventListener("mousemove", (e)=>{
+  if (!isDragging) return;
+  imgX = e.clientX - dragStartX;
+  imgY = e.clientY - dragStartY;
+  updateImageTransform();
+});
+
+document.addEventListener("mouseup", ()=> isDragging=false);
+
+previewArea.addEventListener("wheel", (e)=>{
+  e.preventDefault();
+  const delta = e.deltaY>0 ? -0.1 : 0.1;
+  imgScale = Math.min(5, Math.max(0.2, imgScale+delta));
+  updateImageTransform();
+});
+
+// ===== 購入確定 =====
+function confirmPurchase() {
+  if (!previewRect) {
+    alert("プレビューがありません");
+    return;
+  }
+
+  if (points < previewCost) {
+    alert("ポイント不足です");
+    return;
+  }
+
+  points -= previewCost;
+
+  const { minRow, minCol, cols, rows } = previewRect;
+
+  for (const i of previewCells) {
+    const r = Math.floor(i/SIZE);
+    const c = i % SIZE;
+
+    grid[i].owner = "A";
+    grid[i].adImage = selectedAd.image;
+    grid[i].adLink = selectedAd.link;
+    grid[i].adType = selectedAd.type;
+    grid[i].adName = selectedAd.name;
+    grid[i].timestamp = Date.now();
+    grid[i].bgX = c - minCol;
+    grid[i].bgY = r - minRow;
+    grid[i].bgCols = cols;
+    grid[i].bgRows = rows;
+
+    playAppearAnimation(i);
+  }
+
+  selectedCells = [];
+  previewCells = [];
+  previewRect = null;
+
+  saveState();
+  render();
+  cancelPreview();
+}
+
+function cancelPreview() {
+  document.getElementById("previewArea").style.display = "none";
+  document.getElementById("previewActions").style.display = "none";
+}
+
+// ===== ランキング =====
+function getRanking(period) {
+  const now = Date.now();
+  let start = 0;
+
+  if (period === "day") {
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    start = d.getTime();
+  } else if (period === "week") {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day===0 ? -6 : 1);
+    d.setDate(diff);
+    d.setHours(0,0,0,0);
+    start = d.getTime();
+  } else if (period === "month") {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0,0,0,0);
+    start = d.getTime();
+  }
+
+  const filtered = clickHistory.filter(c => c.time >= start);
+
+  const countMap = {};
+  filtered.forEach(c => {
+    countMap[c.cellIndex] = (countMap[c.cellIndex] || 0) + 1;
+  });
+
+  return Object.entries(countMap)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([cellIndex,count])=>({ cellIndex:Number(cellIndex), count }));
+}
+
+function renderRanking(period) {
+  const list = document.getElementById("rankingList");
+  const ranking = getRanking(period);
+
+  const label = period==="day" ? "1日" :
+                period==="week" ? "1週間" : "1か月";
+
+  if (ranking.length === 0) {
+    list.textContent = `${label}のクリックデータはまだありません。`;
+    return;
+  }
+
+  let html = `【${label}のランキング】<br>`;
+  ranking.slice(0,5).forEach((r,idx)=>{
+    const cell = grid[r.cellIndex];
+    const coord = getCellLabel(r.cellIndex);
+    const name = cell.adName || "名無し";
+    html += `${idx+1}位: ${coord} / ${name} / ${r.count}クリック<br>`;
+  });
+
+  list.innerHTML = html;
+}
+
+// ===== 広告主割合 =====
+function getAdTypeStats() {
+  const stats = { company:0, individual:0, creator:0, service:0 };
+  grid.forEach(cell=>{
+    if (cell.owner && cell.adType) stats[cell.adType]++;
+  });
+  return stats;
+}
+
+function renderAdTypeStats() {
+  const stats = getAdTypeStats();
+  const total = Object.values(stats).reduce((a,b)=>a+b,0);
+
+  if (total === 0) {
+    document.getElementById("statsBox").textContent = "まだ広告がありません。";
+    return;
+  }
+
+  const percent = key => Math.round(stats[key]/total*100);
+
+  document.getElementById("statsBox").innerHTML =
+    `企業：${percent("company")}%（${stats.company}）<br>
+     個人：${percent("individual")}%（${stats.individual}）<br>
+     クリエイター：${percent("creator")}%（${stats.creator}）<br>
+     サービス：${percent("service")}%（${stats.service}）`;
+}
+
+// ===== 自動ポイント加算 =====
+let interval = (MODE==="test") ? 1000 : 600000;
+setInterval(()=>{
+  points += 1;
+  saveState();
+  render();
+}, interval);
+
+// ===== 背景粒子 =====
+function initParticles() {
+  const container = document.getElementById("particles");
+  const count = 40;
+  for (let i=0; i<count; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    resetParticle(p,true);
+    container.appendChild(p);
+  }
+}
+
+function resetParticle(p, initial=false) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const startX = Math.random()*w;
+  const startY = initial ? Math.random()*h : h+20;
+  const duration = 15000 + Math.random()*10000;
+
+  p.style.left = startX+"px";
+  p.style.top = startY+"px";
+  p.style.animationDuration = duration+"ms";
+}
+
+document.addEventListener("animationiteration", e=>{
+  if (e.target.classList.contains("particle")) resetParticle(e.target);
+});
+
+// ===== 初期化 =====
+loadState();
+giveFirstVisitBonus();
+initParticles();
+render();
+</script>
+</body>
+</html>
+
