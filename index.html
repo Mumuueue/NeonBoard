@@ -236,6 +236,31 @@
     z-index: 9999;
     white-space: nowrap;
   }
+ /* ネオン枠 */
+.neon-frame {
+  border: 2px solid #0ff;
+  box-shadow:
+    0 0 5px #0ff,
+    0 0 10px #0ff,
+    0 0 20px #0ff,
+    0 0 40px #0ff;
+}
+
+/* 虹色枠 */
+.rainbow-frame {
+  border: 2px solid transparent;
+  animation: rainbowBorder 2s linear infinite;
+}
+
+@keyframes rainbowBorder {
+  0%   { border-color: red; }
+  20%  { border-color: orange; }
+  40%  { border-color: yellow; }
+  60%  { border-color: green; }
+  80%  { border-color: blue; }
+  100% { border-color: purple; }
+}
+
 </style>
 </head>
 <body>
@@ -480,13 +505,21 @@ function render() {
   container.innerHTML = "";
   const now = Date.now();
 
-  for (let i=0; i<SIZE*SIZE; i++) {
+  for (let i = 0; i < SIZE * SIZE; i++) {
     const cell = grid[i];
     const div = document.createElement("div");
     div.className = "cell";
 
+    // ★ ネオン枠・レインボー枠のクラスを付ける（ここが重要）
+    if (cell.frame === "neon") {
+      div.classList.add("neon-frame");
+    } else if (cell.frame === "rainbow") {
+      div.classList.add("rainbow-frame");
+    }
+    // 無料の場合は何も付けない
+
     if (cell.owner && cell.adImage) {
-      let elapsed = (now - cell.timestamp)/1000/3600;
+      let elapsed = (now - cell.timestamp) / 1000 / 3600;
 
       if (elapsed >= PROTECT_HOURS) {
         grid[i] = createEmptyCell();
@@ -498,17 +531,25 @@ function render() {
         const xIndex = cell.bgX;
         const yIndex = cell.bgY;
 
-        div.style.backgroundSize = `${cols*100}% ${rows*100}%`;
+        div.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
 
-        let xPos = cols>1 ? (xIndex/(cols-1))*100 : 50;
-        let yPos = rows>1 ? (yIndex/(rows-1))*100 : 50;
+        let xPos = cols > 1 ? (xIndex / (cols - 1)) * 100 : 50;
+        let yPos = rows > 1 ? (yIndex / (rows - 1)) * 100 : 50;
         div.style.backgroundPosition = `${xPos}% ${yPos}%`;
 
         if (elapsed >= FADE_START) {
-          let opacity = 1 - (elapsed-FADE_START)/(PROTECT_HOURS-FADE_START);
+          let opacity = 1 - (elapsed - FADE_START) / (PROTECT_HOURS - FADE_START);
           if (opacity < 0.15) opacity = 0.15;
           div.style.opacity = opacity;
         }
+      }
+    }
+
+    container.appendChild(div);
+  }
+}
+
+
      // 背景画像の設定
 if (cell.owner && cell.adImage) {
     div.style.backgroundImage = `url(${cell.adImage})`;
@@ -1005,6 +1046,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
