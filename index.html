@@ -542,7 +542,6 @@ function render() {
         if (elapsedMs < LOCK_TIME) {
           div.classList.add("lock-pin");
 
-          // ピン色を広告画像から取得
           if (cell.adImage) {
             getPinColor(cell.adImage, (pinColor) => {
               div.style.setProperty("--pin-color", pinColor);
@@ -578,94 +577,58 @@ function render() {
       toggleSelect(i);
     };
 
-    container.appendChild(div);
-  }
-}
-
-
-
-
-        if (cell.effect === "glow") div.classList.add("effect-glow");
-        if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
+    // ★ ダブルクリック：広告リンクへ
+    div.ondblclick = () => {
+      if (cell.owner && cell.adLink) {
+        cell.clicks++;
+        clickHistory.push({ cellIndex:i, time:Date.now() });
+        saveState();
+        window.open(cell.adLink, "_blank");
       }
-    }
+    };
 
-    if (selectedCells.includes(i)) div.classList.add("selected");
+    // ★ ツールチップ
+    div.onmousemove = (e) => {
+      const tooltip = document.getElementById("tooltip");
+      const coord = getCellLabel(i);
+      const name = cell.adName || (cell.owner ? "名称未設定" : "（空きマス）");
 
-  // --- 1クリック：選択（ただし1時間ロックあり） ---
-div.onclick = () => {
-  const LOCK_TIME = 3600000; // 1時間（ミリ秒）
-  const cell = grid[i];
+      tooltip.style.display = "block";
+      tooltip.style.left = (e.pageX + 12) + "px";
+      tooltip.style.top  = (e.pageY + 12) + "px";
 
-  // 広告がある場合、掲載から1時間は上書き禁止
-  if (cell.owner && cell.timestamp) {
-    const elapsed = Date.now() - cell.timestamp;
-    if (elapsed < LOCK_TIME) {
-      return; //これが重要
-    }
-  }
+      let expireInfo = "";
+      if (cell.owner && cell.timestamp) {
+        const PROTECT_HOURS = 24;
+        const elapsed = Date.now() - cell.timestamp;
+        const total = PROTECT_HOURS * 60 * 60 * 1000;
+        const remain = total - elapsed;
 
-  // 通常の選択処理
-  toggleSelect(i);
-};
+        if (remain > 0) {
+          const hours = Math.floor(remain / (60 * 60 * 1000));
+          const minutes = Math.ceil((remain % (60 * 60 * 1000)) / (60 * 1000));
+          expireInfo = `<br>掲載終了まで: ${hours}時間 ${minutes}分`;
+        }
+      }
 
+      tooltip.innerHTML = `座標: ${coord}<br>広告主: ${name}${expireInfo}`;
+    };
 
-// --- ダブルクリック：広告リンクへ飛ぶ ---
-div.ondblclick = () => {
-  if (cell.owner && cell.adLink) {
-    cell.clicks++;
-    clickHistory.push({ cellIndex:i, time:Date.now() });
-    saveState();
-    window.open(cell.adLink, "_blank");
-  }
-};
-
-
-
-// ▼ ツールチップ（座標＋広告主名＋掲載終了までの時間） ▼
-div.onmousemove = (e) => {
-  const tooltip = document.getElementById("tooltip");
-  const coord = getCellLabel(i);
-  const name = cell.adName || (cell.owner ? "名称未設定" : "（空きマス）");
-
-  tooltip.style.display = "block";
-  tooltip.style.left = (e.pageX + 12) + "px";
-  tooltip.style.top  = (e.pageY + 12) + "px";
-
-  // --- 掲載終了までの残り時間を計算 ---
-  let expireInfo = "";
-  if (cell.owner && cell.timestamp) {
-    const PROTECT_HOURS = 24;
-    const elapsed = Date.now() - cell.timestamp;
-    const total = PROTECT_HOURS * 60 * 60 * 1000;
-    const remain = total - elapsed;
-
-    if (remain > 0) {
-      const hours = Math.floor(remain / (60 * 60 * 1000));
-      const minutes = Math.ceil((remain % (60 * 60 * 1000)) / (60 * 1000));
-      expireInfo = `<br>掲載終了まで: ${hours}時間 ${minutes}分`;
-    }
-  }
-
-  tooltip.innerHTML = `座標: ${coord}<br>広告主: ${name}${expireInfo}`;
-};
-
-div.onmouseleave = () => {
-  const tooltip = document.getElementById("tooltip");
-  tooltip.style.display = "none";
-};
-
-
+    div.onmouseleave = () => {
+      document.getElementById("tooltip").style.display = "none";
+    };
 
     container.appendChild(div);
   }
 
+  // ★ 下部情報更新
   document.getElementById("points").textContent = points;
   document.getElementById("selectedCount").textContent = selectedCells.length;
   document.getElementById("needPoints").textContent = selectedCells.length * EMPTY_COST;
 
   renderAdTypeStats();
 }
+
 
 // ===== マス選択 =====
 function toggleSelect(i) {
@@ -1031,6 +994,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
