@@ -596,7 +596,7 @@ div.ondblclick = () => {
 
 
 
-// ▼ ツールチップ（座標＋広告主名） ▼
+// ▼ ツールチップ（座標＋広告主名＋掲載終了までの時間） ▼
 div.onmousemove = (e) => {
   const tooltip = document.getElementById("tooltip");
   const coord = getCellLabel(i);
@@ -605,13 +605,30 @@ div.onmousemove = (e) => {
   tooltip.style.display = "block";
   tooltip.style.left = (e.pageX + 12) + "px";
   tooltip.style.top  = (e.pageY + 12) + "px";
-  tooltip.innerHTML = `座標: ${coord}<br>広告主: ${name}`;
+
+  // --- 掲載終了までの残り時間を計算 ---
+  let expireInfo = "";
+  if (cell.owner && cell.timestamp) {
+    const PROTECT_HOURS = 24;
+    const elapsed = Date.now() - cell.timestamp;
+    const total = PROTECT_HOURS * 60 * 60 * 1000;
+    const remain = total - elapsed;
+
+    if (remain > 0) {
+      const hours = Math.floor(remain / (60 * 60 * 1000));
+      const minutes = Math.ceil((remain % (60 * 60 * 1000)) / (60 * 1000));
+      expireInfo = `<br>掲載終了まで: ${hours}時間 ${minutes}分`;
+    }
+  }
+
+  tooltip.innerHTML = `座標: ${coord}<br>広告主: ${name}${expireInfo}`;
 };
 
 div.onmouseleave = () => {
   const tooltip = document.getElementById("tooltip");
   tooltip.style.display = "none";
 };
+
 
 
     container.appendChild(div);
@@ -926,6 +943,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
