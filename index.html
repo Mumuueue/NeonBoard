@@ -426,38 +426,6 @@ async function checkImageSafety(file) {
   });
 }
 
-// ===== 出現エフェクト =====
-function playAppearAnimation(cellIndex) {
-  const gridDiv = document.getElementById("grid").children[cellIndex];
-  const rect = gridDiv.getBoundingClientRect();
-  const cx = rect.left + rect.width/2;
-  const cy = rect.top + rect.height/2;
-
-  for (let p=0; p<12; p++) {
-    const particle = document.createElement("div");
-    particle.className = "gather-particle";
-
-    const angle = Math.random()*Math.PI*2;
-    const dist = 40 + Math.random()*40;
-
-    particle.style.setProperty("--sx", Math.cos(angle)*dist + "px");
-    particle.style.setProperty("--sy", Math.sin(angle)*dist + "px");
-
-    particle.style.left = cx + "px";
-    particle.style.top = cy + "px";
-
-    document.body.appendChild(particle);
-    setTimeout(()=>particle.remove(),700);
-  }
-
-  const flash = document.createElement("div");
-  flash.className = "appear-flash";
-  flash.style.left = (cx-20)+"px";
-  flash.style.top = (cy-20)+"px";
-  document.body.appendChild(flash);
-  setTimeout(()=>flash.remove(),500);
-}
-
 // ===== グリッド描画（安定版） =====
 function render() {
   const container = document.getElementById("grid");
@@ -697,8 +665,6 @@ function confirmPurchase() {
     grid[i].bgY = r - minRow;
     grid[i].bgCols = cols;
     grid[i].bgRows = rows;
-
-    playAppearAnimation(i);
   }
 
   selectedCells = [];
@@ -844,5 +810,6 @@ render();
 </script>
 </body>
 </html>
+
 
 
