@@ -510,14 +510,14 @@ function render() {
     const div = document.createElement("div");
     div.className = "cell";
 
-    // ★ ネオン枠・レインボー枠のクラスを付ける（ここが重要）
+    // ★ 枠（無料 / ネオン / レインボー）
     if (cell.frame === "neon") {
       div.classList.add("neon-frame");
     } else if (cell.frame === "rainbow") {
       div.classList.add("rainbow-frame");
     }
-    // 無料の場合は何も付けない
 
+    // ★ 背景画像
     if (cell.owner && cell.adImage) {
       let elapsed = (now - cell.timestamp) / 1000 / 3600;
 
@@ -525,78 +525,63 @@ function render() {
         grid[i] = createEmptyCell();
       } else {
         div.style.backgroundImage = `url(${cell.adImage})`;
+        div.style.backgroundSize = `${cell.bgCols * 100}% ${cell.bgRows * 100}%`;
+        div.style.backgroundPosition = `${cell.bgX * 100}% ${cell.bgY * 100}%`;
 
-        const cols = cell.bgCols;
-        const rows = cell.bgRows;
-        const xIndex = cell.bgX;
-        const yIndex = cell.bgY;
-
-        div.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
-
-        let xPos = cols > 1 ? (xIndex / (cols - 1)) * 100 : 50;
-        let yPos = rows > 1 ? (yIndex / (rows - 1)) * 100 : 50;
-        div.style.backgroundPosition = `${xPos}% ${yPos}%`;
-
+        // ★ フェード処理
         if (elapsed >= FADE_START) {
           let opacity = 1 - (elapsed - FADE_START) / (PROTECT_HOURS - FADE_START);
           if (opacity < 0.15) opacity = 0.15;
           div.style.opacity = opacity;
         }
+
+        // ★ くぎ（ロック中）
+        const LOCK_TIME = 3600000;
+        const elapsedMs = now - cell.timestamp;
+
+        if (elapsedMs < LOCK_TIME) {
+          div.classList.add("lock-pin");
+
+          // ピン色を広告画像から取得
+          if (cell.adImage) {
+            getPinColor(cell.adImage, (pinColor) => {
+              div.style.setProperty("--pin-color", pinColor);
+            });
+          }
+
+          const pinL = document.createElement("div");
+          pinL.className = "pin-bottom-left";
+          div.appendChild(pinL);
+
+          const pinR = document.createElement("div");
+          pinR.className = "pin-bottom-right";
+          div.appendChild(pinR);
+        }
+
+        // ★ エフェクト
+        if (cell.effect === "glow") div.classList.add("effect-glow");
+        if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
       }
     }
+
+    // ★ 選択状態
+    if (selectedCells.includes(i)) div.classList.add("selected");
+
+    // ★ クリック処理（ロック中は無効）
+    div.onclick = () => {
+      const LOCK_TIME = 3600000;
+      const cell = grid[i];
+      if (cell.owner && cell.timestamp) {
+        const elapsed = Date.now() - cell.timestamp;
+        if (elapsed < LOCK_TIME) return;
+      }
+      toggleSelect(i);
+    };
 
     container.appendChild(div);
   }
 }
 
-
-     // 背景画像の設定
-if (cell.owner && cell.adImage) {
-    div.style.backgroundImage = `url(${cell.adImage})`;
-    div.style.backgroundSize = `${cell.bgCols*100}% ${cell.bgRows*100}%`;
-    div.style.backgroundPosition = `${cell.bgX*100}% ${cell.bgY*100}%`;
-}
-function getPinColor(imgUrl, callback) {
-  const img = new Image();
-  img.crossOrigin = "Anonymous";
-  img.src = imgUrl;
-
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, 1, 1);
-    const pixel = ctx.getImageData(0, 0, 1, 1).data;
-    const color = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-    callback(color);
-  };
-}
-
-// --- 保護期間中なら四隅に“くぎ”を付ける ---
-const LOCK_TIME = 3600000; // 1時間
-if (cell.owner && cell.timestamp) {
-  const elapsed = Date.now() - cell.timestamp;
-  if (elapsed < LOCK_TIME) {
-
-    div.classList.add("lock-pin");
-
-    // ピンの色を広告画像に合わせる
-    if (cell.adImage) {
-      getPinColor(cell.adImage, (pinColor) => {
-        div.style.setProperty("--pin-color", pinColor);
-      });
-    }
-
-    const pinL = document.createElement("div");
-    pinL.className = "pin-bottom-left";
-    div.appendChild(pinL);
-
-    const pinR = document.createElement("div");
-    pinR.className = "pin-bottom-right";
-    div.appendChild(pinR);
-  }
-}
 
 
 
@@ -1046,6 +1031,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
