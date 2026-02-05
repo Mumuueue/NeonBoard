@@ -860,6 +860,50 @@ function renderRanking(period) {
     list.textContent = `${label}のクリックデータはまだありません。`;
     return;
   }
+ function renderRanking(period) {
+  const list = document.getElementById("rankingList");
+  const ranking = getRanking(period);
+
+  const label = period==="day" ? "1日" :
+                period==="week" ? "1週間" : "1か月";
+
+  if (ranking.length === 0) {
+    list.textContent = `${label}のクリックデータはまだありません。`;
+    return;
+  }
+
+  // --- 広告主ごとにクリック数を合計する ---
+  const ownerClicks = {};
+
+  ranking.forEach(r => {
+    const cell = grid[r.cellIndex];
+    const name = cell.adName || "名無し";
+
+    if (!ownerClicks[name]) ownerClicks[name] = 0;
+    ownerClicks[name] += r.count;
+  });
+
+  // --- ランキング配列に変換してソート ---
+  const rankingArray = Object.entries(ownerClicks)
+    .map(([name, clicks]) => ({ name, clicks }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  // --- 上位5名を表示（クリック可能） ---
+  let html = `【${label}のランキング】<br>`;
+  rankingArray.slice(0, 5).forEach((r, idx) => {
+    html += `${idx + 1}位: <span class="rank-owner" data-owner="${r.name}" style="cursor:pointer; text-decoration:underline;">${r.name}</span> / ${r.clicks}クリック<br>`;
+  });
+
+  list.innerHTML = html;
+
+  // --- クリックイベント付与 ---
+  document.querySelectorAll(".rank-owner").forEach(el => {
+    el.onclick = () => {
+      showOwnerAds(el.dataset.owner);
+    };
+  });
+}
+
  function showOwnerAds(ownerName) {
   const list = document.getElementById("rankingList");
 
@@ -915,13 +959,6 @@ const rankingArray = Object.entries(ownerClicks)
   .map(([name, clicks]) => ({ name, clicks }))
   .sort((a, b) => b.clicks - a.clicks);
 
-// --- 上位5名を表示（広告主名をクリック可能にする） ---
-let html = `【${label}のランキング】<br>`;
-rankingArray.slice(0, 5).forEach((r, idx) => {
-  html += `${idx + 1}位: <span class="rank-owner" data-owner="${r.name}" style="cursor:pointer; text-decoration:underline;">${r.name}</span> / ${r.clicks}クリック<br>`;
-});
-
-list.innerHTML = html;
 
 // --- クリックイベントを付与（広告一覧を表示） ---
 document.querySelectorAll(".rank-owner").forEach(el => {
@@ -1003,6 +1040,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
