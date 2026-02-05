@@ -88,6 +88,54 @@
   .cell:hover {
     background-color: rgba(255, 255, 255, 0.24);
   }
+ /* 保護期間中のマスに付ける“くぎ” */
+.cell.lock-pin {
+  position: relative;
+}
+
+.cell.lock-pin::before,
+.cell.lock-pin::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffd27f;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ffd27f;
+}
+
+/* 左上のくぎ */
+.cell.lock-pin::before {
+  top: -3px;
+  left: -3px;
+}
+
+/* 右上のくぎ */
+.cell.lock-pin::after {
+  top: -3px;
+  right: -3px;
+}
+
+/* 下側のくぎ2つ */
+.cell.lock-pin .pin-bottom-left,
+.cell.lock-pin .pin-bottom-right {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffd27f;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ffd27f;
+  bottom: -3px;
+}
+
+.cell.lock-pin .pin-bottom-left {
+  left: -3px;
+}
+
+.cell.lock-pin .pin-bottom-right {
+  right: -3px;
+}
+
 
   .selected {
     border-color: #4da6ff;
@@ -469,16 +517,37 @@ function render() {
 
     if (selectedCells.includes(i)) div.classList.add("selected");
 
-    div.onclick = () => {
-      if (cell.owner && cell.adLink) {
-        cell.clicks++;
-        clickHistory.push({ cellIndex:i, time:Date.now() });
-        saveState();
-        window.open(cell.adLink,"_blank");
-      } else {
-        toggleSelect(i);
-      }
-    };
+  // --- 1クリック：選択（ただし1時間ロックあり） ---
+div.onclick = () => {
+  const LOCK_TIME = 3600000; // 1時間（ミリ秒）
+  const cell = grid[i];
+
+  // 広告がある場合、掲載から1時間は上書き禁止
+  if (cell.owner && cell.timestamp) {
+    const elapsed = Date.now() - cell.timestamp;
+    if (elapsed < LOCK_TIME) {
+      const remain = Math.ceil((LOCK_TIME - elapsed) / 60000); // 残り分数
+      alert(`このマスはまだ上書きできません。\nあと ${remain} 分お待ちください。`);
+      return;
+    }
+  }
+
+  // 通常の選択処理
+  toggleSelect(i);
+};
+
+
+// --- ダブルクリック：広告リンクへ飛ぶ ---
+div.ondblclick = () => {
+  if (cell.owner && cell.adLink) {
+    cell.clicks++;
+    clickHistory.push({ cellIndex:i, time:Date.now() });
+    saveState();
+    window.open(cell.adLink, "_blank");
+  }
+};
+
+
 
 // ▼ ツールチップ（座標＋広告主名） ▼
 div.onmousemove = (e) => {
@@ -785,6 +854,24 @@ function initParticles() {
     container.appendChild(p);
   }
 }
+ // --- 保護期間中なら四隅に“くぎ”を付ける ---
+const LOCK_TIME = 3600000; // 1時間
+if (cell.owner && cell.timestamp) {
+  const elapsed = Date.now() - cell.timestamp;
+  if (elapsed < LOCK_TIME) {
+    div.classList.add("lock-pin");
+
+    // 下側のくぎ2つを追加
+    const pinL = document.createElement("div");
+    pinL.className = "pin-bottom-left";
+    div.appendChild(pinL);
+
+    const pinR = document.createElement("div");
+    pinR.className = "pin-bottom-right";
+    div.appendChild(pinR);
+  }
+}
+
 
 function resetParticle(p, initial=false) {
   const w = window.innerWidth;
@@ -810,6 +897,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
