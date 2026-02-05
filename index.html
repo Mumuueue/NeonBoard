@@ -371,7 +371,7 @@ const SIZE = 15;
 const EMPTY_COST = 100;
 
 let PROTECT_HOURS = MODE === "production" ? 12 : 30/3600;
-let FADE_START    = MODE === "production" ? 11 : 25/3600;
+let FADE_START    = MODE === "production" ? 11 : 25/39600;
 
 // ===== 状態 =====
 let points = 0;
@@ -575,9 +575,7 @@ div.onclick = () => {
   if (cell.owner && cell.timestamp) {
     const elapsed = Date.now() - cell.timestamp;
     if (elapsed < LOCK_TIME) {
-      const remain = Math.ceil((LOCK_TIME - elapsed) / 60000); // 残り分数
-      alert(`このマスはまだ上書きできません。\nあと ${remain} 分お待ちください。`);
-      return;
+      return; //これが重要
     }
   }
 
@@ -928,6 +926,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
