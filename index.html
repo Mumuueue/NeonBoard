@@ -933,31 +933,6 @@ function renderRanking(period) {
 }
 
 
-// --- 広告主ごとにクリック数を合計する ---
-const ownerClicks = {}; // { adName: totalClicks }
-
-ranking.forEach(r => {
-  const cell = grid[r.cellIndex];
-  const name = cell.adName || "名無し";
-
-  if (!ownerClicks[name]) ownerClicks[name] = 0;
-  ownerClicks[name] += r.count;
-});
-
-// --- ランキング配列に変換してソート ---
-const rankingArray = Object.entries(ownerClicks)
-  .map(([name, clicks]) => ({ name, clicks }))
-  .sort((a, b) => b.clicks - a.clicks);
-
-
-// --- クリックイベントを付与（広告一覧を表示） ---
-document.querySelectorAll(".rank-owner").forEach(el => {
-  el.onclick = () => {
-    showOwnerAds(el.dataset.owner);
-  };
-});
-
-
 
 // ===== 広告主割合 =====
 function getAdTypeStats() {
@@ -1030,6 +1005,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
