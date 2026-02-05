@@ -860,17 +860,77 @@ function renderRanking(period) {
     list.textContent = `${label}のクリックデータはまだありません。`;
     return;
   }
+ function showOwnerAds(ownerName) {
+  const list = document.getElementById("rankingList");
 
-  let html = `【${label}のランキング】<br>`;
-  ranking.slice(0,5).forEach((r,idx)=>{
-    const cell = grid[r.cellIndex];
-    const coord = getCellLabel(r.cellIndex);
-    const name = cell.adName || "名無し";
-    html += `${idx+1}位: ${coord} / ${name} / ${r.count}クリック<br>`;
+  const cells = grid
+    .map((cell, index) => ({ cell, index }))
+    .filter(c => c.cell.adName === ownerName);
+
+  if (cells.length === 0) {
+    list.innerHTML += `<br><br>※ ${ownerName} さんの広告はありません。`;
+    return;
+  }
+
+  let html = `<br><br>【${ownerName} さんの広告一覧】<br>`;
+
+  cells.forEach(c => {
+    const coord = getCellLabel(c.index);
+    const clicks = c.cell.clicks;
+
+    const PROTECT_HOURS = 24;
+    const elapsed = Date.now() - c.cell.timestamp;
+    const total = PROTECT_HOURS * 60 * 60 * 1000;
+    const remain = total - elapsed;
+
+    let remainText = "";
+    if (remain > 0) {
+      const hours = Math.floor(remain / (60 * 60 * 1000));
+      const minutes = Math.ceil((remain % (60 * 60 * 1000)) / (60 * 1000));
+      remainText = `${hours}時間${minutes}分`;
+    } else {
+      remainText = "掲載終了";
+    }
+
+    html += `・${coord} / ${clicks}クリック / 残り: ${remainText}<br>`;
   });
 
-  list.innerHTML = html;
+  list.innerHTML += html;
 }
+
+
+// --- 広告主ごとにクリック数を合計する ---
+const ownerClicks = {}; // { adName: totalClicks }
+
+ranking.forEach(r => {
+  const cell = grid[r.cellIndex];
+  const name = cell.adName || "名無し";
+
+  if (!ownerClicks[name]) ownerClicks[name] = 0;
+  ownerClicks[name] += r.count;
+});
+
+// --- ランキング配列に変換してソート ---
+const rankingArray = Object.entries(ownerClicks)
+  .map(([name, clicks]) => ({ name, clicks }))
+  .sort((a, b) => b.clicks - a.clicks);
+
+// --- 上位5名を表示（広告主名をクリック可能にする） ---
+let html = `【${label}のランキング】<br>`;
+rankingArray.slice(0, 5).forEach((r, idx) => {
+  html += `${idx + 1}位: <span class="rank-owner" data-owner="${r.name}" style="cursor:pointer; text-decoration:underline;">${r.name}</span> / ${r.clicks}クリック<br>`;
+});
+
+list.innerHTML = html;
+
+// --- クリックイベントを付与（広告一覧を表示） ---
+document.querySelectorAll(".rank-owner").forEach(el => {
+  el.onclick = () => {
+    showOwnerAds(el.dataset.owner);
+  };
+});
+
+
 
 // ===== 広告主割合 =====
 function getAdTypeStats() {
@@ -943,6 +1003,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
