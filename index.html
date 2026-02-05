@@ -860,17 +860,6 @@ function renderRanking(period) {
     list.textContent = `${label}のクリックデータはまだありません。`;
     return;
   }
- function renderRanking(period) {
-  const list = document.getElementById("rankingList");
-  const ranking = getRanking(period);
-
-  const label = period==="day" ? "1日" :
-                period==="week" ? "1週間" : "1か月";
-
-  if (ranking.length === 0) {
-    list.textContent = `${label}のクリックデータはまだありません。`;
-    return;
-  }
 
   // --- 広告主ごとにクリック数を合計する ---
   const ownerClicks = {};
@@ -903,6 +892,7 @@ function renderRanking(period) {
     };
   });
 }
+
 
  function showOwnerAds(ownerName) {
   const list = document.getElementById("rankingList");
@@ -1040,6 +1030,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
