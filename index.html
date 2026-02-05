@@ -560,10 +560,11 @@ if (elapsedMs < LOCK_TIME) {
 // ★ エフェクト
 if (cell.effect === "glow") div.classList.add("effect-glow");
 if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
+}  // ← ★ これが必要
 
-} 
-    // ★ 選択状態
-    if (selectedCells.includes(i)) div.classList.add("selected");
+// ★ 選択状態
+if (selectedCells.includes(i)) div.classList.add("selected");
+
 
     // ★ クリック処理（ロック中は無効）
     div.onclick = () => {
@@ -993,6 +994,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
