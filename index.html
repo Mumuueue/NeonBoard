@@ -535,36 +535,36 @@ function render() {
           div.style.opacity = opacity;
         }
 
-// ★ くぎ（ロック中）
-const LOCK_TIME = 3600000;
-const elapsedMs = now - cell.timestamp;
+        // ★ くぎ（ロック中）
+        const LOCK_TIME = 3600000;
+        const elapsedMs = now - cell.timestamp;
 
-if (elapsedMs < LOCK_TIME) {
-  div.classList.add("lock-pin");
+        if (elapsedMs < LOCK_TIME) {
+          div.classList.add("lock-pin");
 
-  if (cell.adImage) {
-    getPinColor(cell.adImage, (pinColor) => {
-      div.style.setProperty("--pin-color", pinColor);
-    });
-  }
+          if (cell.adImage) {
+            getPinColor(cell.adImage, (pinColor) => {
+              div.style.setProperty("--pin-color", pinColor);
+            });
+          }
 
-  const pinL = document.createElement("div");
-  pinL.className = "pin-bottom-left";
-  div.appendChild(pinL);
+          const pinL = document.createElement("div");
+          pinL.className = "pin-bottom-left";
+          div.appendChild(pinL);
 
-  const pinR = document.createElement("div");
-  pinR.className = "pin-bottom-right";
-  div.appendChild(pinR);
-}
+          const pinR = document.createElement("div");
+          pinR.className = "pin-bottom-right";
+          div.appendChild(pinR);
+        }
 
-// ★ エフェクト
-if (cell.effect === "glow") div.classList.add("effect-glow");
-if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
-}  // ← ★ これが必要
+        // ★ エフェクト
+        if (cell.effect === "glow") div.classList.add("effect-glow");
+        if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
+      }
+    }
 
-// ★ 選択状態
-if (selectedCells.includes(i)) div.classList.add("selected");
-
+    // ★ 選択状態
+    if (selectedCells.includes(i)) div.classList.add("selected");
 
     // ★ クリック処理（ロック中は無効）
     div.onclick = () => {
@@ -628,6 +628,7 @@ if (selectedCells.includes(i)) div.classList.add("selected");
 
   renderAdTypeStats();
 }
+
 
 
 // ===== マス選択 =====
@@ -994,6 +995,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
