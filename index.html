@@ -509,6 +509,30 @@ function render() {
           if (opacity < 0.15) opacity = 0.15;
           div.style.opacity = opacity;
         }
+     // 背景画像の設定
+if (cell.owner && cell.adImage) {
+    div.style.backgroundImage = `url(${cell.adImage})`;
+    div.style.backgroundSize = `${cell.bgCols*100}% ${cell.bgRows*100}%`;
+    div.style.backgroundPosition = `${cell.bgX*100}% ${cell.bgY*100}%`;
+}
+
+// --- 保護期間中なら四隅に“くぎ”を付ける ---
+const LOCK_TIME = 3600000; // 1時間
+if (cell.owner && cell.timestamp) {
+  const elapsed = Date.now() - cell.timestamp;
+  if (elapsed < LOCK_TIME) {
+    div.classList.add("lock-pin");
+
+    const pinL = document.createElement("div");
+    pinL.className = "pin-bottom-left";
+    div.appendChild(pinL);
+
+    const pinR = document.createElement("div");
+    pinR.className = "pin-bottom-right";
+    div.appendChild(pinR);
+  }
+}
+
 
         if (cell.effect === "glow") div.classList.add("effect-glow");
         if (cell.effect === "rainbow") div.classList.add("effect-rainbow");
@@ -854,24 +878,6 @@ function initParticles() {
     container.appendChild(p);
   }
 }
- // --- 保護期間中なら四隅に“くぎ”を付ける ---
-const LOCK_TIME = 3600000; // 1時間
-if (cell.owner && cell.timestamp) {
-  const elapsed = Date.now() - cell.timestamp;
-  if (elapsed < LOCK_TIME) {
-    div.classList.add("lock-pin");
-
-    // 下側のくぎ2つを追加
-    const pinL = document.createElement("div");
-    pinL.className = "pin-bottom-left";
-    div.appendChild(pinL);
-
-    const pinR = document.createElement("div");
-    pinR.className = "pin-bottom-right";
-    div.appendChild(pinR);
-  }
-}
-
 
 function resetParticle(p, initial=false) {
   const w = window.innerWidth;
@@ -897,6 +903,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 
